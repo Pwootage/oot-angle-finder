@@ -303,16 +303,16 @@ else:
         })
         graph.append(node)
         print(hex(angle))
-    with open('graph.pickle', 'wb') as f:
-        pickle.dump(graph, f, pickle.HIGHEST_PROTOCOL)
+    # with open('graph.pickle', 'wb') as f:
+    #     pickle.dump(graph, f, pickle.HIGHEST_PROTOCOL)
 
 starting_angles    = [
-    0x1234
+    0x1
+]
+destination_angles = [
+    0x9336
 ]
 
-destination_angles = [
-    0xe001, 0xacab
-]
 
 stop_after_first_match = False
 max_ess = 8
