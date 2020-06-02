@@ -10,13 +10,18 @@ struct MovementType {
     ess_right,
     turn_left,
     turn_right,
+    turn_180,
+
     sidehop_roll_left,
     sidehop_roll_right,
+    ess_down_sideroll,
+    backflip_roll,
+
     kokiri_spin,
+
     biggoron_spin,
     biggoron_spin_shield,
-    back_roll,
-    backflip_roll,
+
     shield_topright,
     shield_topleft,
     shield_bottomleft,
@@ -25,7 +30,32 @@ struct MovementType {
   int count = 1;
 };
 
-const char* nameForType(MovementType::Type type) {
+inline constexpr bool isAdjustment(MovementType::Type type) {
+  switch (type) {
+    case MovementType::Type::ess_up:
+    case MovementType::Type::turn_left:
+    case MovementType::Type::turn_right:
+    case MovementType::Type::turn_180:
+    case MovementType::Type::shield_topright:
+    case MovementType::Type::shield_topleft:
+    case MovementType::Type::shield_bottomleft:
+    case MovementType::Type::shield_bottomright:
+      return true;
+
+    case MovementType::Type::ess_left:
+    case MovementType::Type::ess_right:
+    case MovementType::Type::sidehop_roll_left:
+    case MovementType::Type::sidehop_roll_right:
+    case MovementType::Type::kokiri_spin:
+    case MovementType::Type::biggoron_spin:
+    case MovementType::Type::biggoron_spin_shield:
+    case MovementType::Type::ess_down_sideroll:
+    case MovementType::Type::backflip_roll:
+      return false;
+  }
+}
+
+inline constexpr const char* nameForType(MovementType::Type type) {
   switch (type) {
     case MovementType::Type::ess_up:
       return "ess up";
@@ -47,8 +77,8 @@ const char* nameForType(MovementType::Type type) {
       return "biggoron spin";
     case MovementType::Type::biggoron_spin_shield:
       return "biggoron spin shield cancel";
-    case MovementType::Type::back_roll:
-      return "back roll";
+    case MovementType::Type::ess_down_sideroll:
+      return "ess down sideroll";
     case MovementType::Type::backflip_roll:
       return "backflip roll";
     case MovementType::Type::shield_topright:
@@ -59,6 +89,8 @@ const char* nameForType(MovementType::Type type) {
       return "shield bottom left";
     case MovementType::Type::shield_bottomright:
       return "shield bottom right";
+    case MovementType::Type::turn_180:
+      return "turn 180";
   }
 }
 

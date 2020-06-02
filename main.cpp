@@ -69,7 +69,7 @@ Node generateNode(angle a) {
 //      printf("Angle %x\n", i);
 //    }
   // Stuff you can always do
-  auto _ess_up = ess_up(a);
+  auto _ess_up = ess_up_adjust(a);
   if (_ess_up.has_value()) {
     n.neighbors.push_back(Neighbor{
         .movementType = {.type = MovementType::Type::ess_up},
@@ -101,6 +101,13 @@ Node generateNode(angle a) {
         .value = _turn_right.value()
     });
   }
+  auto _turn_180 = turn_180(a);
+  if (_turn_180.has_value()) {
+    n.neighbors.push_back(Neighbor{
+        .movementType = {.type = MovementType::Type::turn_180},
+        .value = _turn_180.value()
+    });
+  }
 
   // Stuff you can do if you're not carrying anything
   if (NO_CARRY_ENABLED) {
@@ -113,8 +120,8 @@ Node generateNode(angle a) {
         .value = sidehop_roll_right(a)
     });
     n.neighbors.push_back(Neighbor{
-        .movementType = {.type = MovementType::Type::back_roll},
-        .value = back_roll(a)
+        .movementType = {.type = MovementType::Type::ess_down_sideroll},
+        .value = ess_down_sideroll(a)
     });
     n.neighbors.push_back(Neighbor{
         .movementType = {.type = MovementType::Type::backflip_roll},
@@ -190,10 +197,12 @@ GenerationResults generateFastestPaths(std::vector<Node> &graph, angle src) {
   uint32_t lastDistance = 0;
   Node *last = nullptr;
   while (!heap.empty() && remaining > 0) {
+    // Get the top of the heap
     std::pop_heap(heap.begin(), heap.end(), sort_nodes);
     auto current = heap.back();
     last = current;
     heap.pop_back();
+    // Check the current distance
     int distance = current->distance;
     if (distance != lastDistance) {
       lastDistance = distance;
@@ -201,8 +210,10 @@ GenerationResults generateFastestPaths(std::vector<Node> &graph, angle src) {
     }
     visited++;
 
+    // For each neighbor
     for (auto &neighbor : current->neighbors) {
       if (found[neighbor.value] == 1) continue; // We don't care anymore, we already found a path tho this
+      // Yay, someone new
       Node *node = &graph[neighbor.value];
       node->distance = distance + 1;
       heap.push_back(node);
@@ -213,6 +224,7 @@ GenerationResults generateFastestPaths(std::vector<Node> &graph, angle src) {
       remaining--;
     }
   }
+  // TODO This prints out the route; this should probably be put in a method
 //  std::vector<angle> stack;
 //  {
 //    angle a = last->value;
