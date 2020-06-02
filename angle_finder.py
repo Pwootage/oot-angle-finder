@@ -398,11 +398,11 @@ else:
         print("Failed to write graph") # can happen on large dumps
 
 starting_angles    = [
-    0x0000, 0x4000, 0x8000, 0xc001
+    0x0001
 ]
 
 destination_angles = [
-    0x0419, 0xacab
+    0x0000
 ]
 
 max_ess = 10

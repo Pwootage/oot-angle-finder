@@ -1,0 +1,40 @@
+<html>
+<head>
+    <title>OOT angle finder</title>
+</head>
+
+<body>
+    <script src="cmake-build-emscripten/oot_angle_finder.js"></script>
+    <script type="text/javascript">
+        const genBackpaths = Module.cwrap('genBackpaths', 'number', ['number']);
+        const genPathForCurrentResult = Module.cwrap('genPathForCurrentResult', 'string', ['number']);
+        function calculate() {
+            const src_value = document.getElementById("src_angle").value;
+            const src_angle = Number.parseInt(src_value, 16) & 0xFFFF;
+            const dest_value = document.getElementById("dest_angle").value;
+            const dest_angle = Number.parseInt(dest_value, 16) & 0xFFFF;
+            const result = genBackpaths(src_angle);
+            const resultArray = Module.HEAPU16.subarray(result / 2, result / 2 + 0x10000)
+            console.log(resultArray);
+            const path = genPathForCurrentResult(dest_angle);
+            console.log("Path: ", path);
+            const outPath = document.getElementById("out_path");
+            outPath.innerHTML = '';
+            for (const line of path.split('\n')) {
+                if (line == '') continue;
+                const ele = document.createElement('li')
+                ele.innerText = line;
+                outPath.appendChild(ele);
+            }
+        }
+    </script>
+
+    Start angle:
+    <input type="text" id="src_angle" value="ABCD" />
+    End angle:
+    <input type="text" id="dest_angle" value="ABCD" />
+    <input type="button" value="calculate" onclick="calculate()">
+    <br />
+    <ol id="out_path"></ol>
+</body>
+</html>

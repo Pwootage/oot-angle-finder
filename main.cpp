@@ -1,8 +1,16 @@
 #include <iostream>
+#include <sstream>
 #include <array>
+#include <iomanip>
 
 #include "angles.h"
 #include "graph.h"
+
+#ifdef EMSCRIPTEN
+#include <emscripten.h>
+#endif
+
+using namespace std;
 
 int ESS_COUNT = 8;
 bool SWORD_ENABLED = true;
@@ -22,10 +30,98 @@ GenerationResults generateFastestPaths(std::vector<Node> &graph, angle src);
 
 Node generateNode(angle a);
 
+#ifndef EMSCRIPTEN_KEEPALIVE
+#define EMSCRIPTEN_KEEPALIVE
+#endif
 
+#ifdef EMSCRIPTEN
+angle *result;
+std::vector<Node> g_graph;
+std::string pathStorage;
 
 int main() {
-//  for (uint32_t i = 0; i <= 0xFFFFu; i++) {
+  result = new angle[0x10000];
+  printf("Allocated result array\n");
+}
+
+extern "C" {
+EMSCRIPTEN_KEEPALIVE
+uint16_t *genBackpaths(angle a) {
+  if (g_graph.size() == 0) {
+      printf("Generating graph...\n");
+      g_graph = std::move(generateGraph());
+  }
+  auto angles = generateFastestPaths(g_graph, a);
+  memcpy(result, &angles.backPath[0], sizeof(angle) * 0x10000);
+  return result;
+}
+
+EMSCRIPTEN_KEEPALIVE
+char *genPathForCurrentResult(angle dest) {
+  std::vector<angle> stack;
+  {
+    angle a = dest;
+    while (true) {
+      angle prev = result[a];
+      if (prev == a) {
+        stack.push_back(a);
+        printf("Done %04x to %04x!\n", prev, dest);
+        break;
+      }
+      stack.push_back(a);
+      a = prev;
+    }
+    std::reverse(stack.begin(), stack.end());
+  }
+  {
+    std::ostringstream res;
+    res << hex << setw(2) << stack[0] << " start angle" << endl;
+//    printf("%04x start angle x1\n", stack[0]);
+    angle previousAngle = stack[0];
+    for (int i = 1; i < stack.size(); i++) {
+      angle currentAngle = stack[i];
+      Node n = generateNode(previousAngle);
+      MovementType::Type t;
+      int count = 1;
+      for (auto &neighbor : n.neighbors) {
+        if (neighbor.value == currentAngle) {
+          t = neighbor.movementType.type;
+          count = neighbor.movementType.count;
+        }
+      }
+      res << nameForType(t) << " x" << dec << count << " to " << hex << currentAngle << endl;
+//      printf("%s x%d to %04x\n", nameForType(t), count, currentAngle);
+      previousAngle = currentAngle;
+    }
+    pathStorage = res.str();
+  }
+
+  return pathStorage.data();
+}
+};
+//int main() {
+//  angle longestStart;
+//  angle longestEnd;
+//  int longest = 0;
+//
+//  auto graph = generateGraph();
+//  for (uint32_t i = 0; i <= 0x0u; i++) {
+//    angle a = i;
+//    printf("Getting fastest paths for %04x\n", a);
+//    auto angles = generateFastestPaths(graph, a);
+//    if (angles.longestPath > longest) {
+//      longest = angles.longestPath;
+//      longestStart = i;
+//      longestEnd = angles.longestAngle;
+//    }
+//  }
+//
+//  printf("Longest angle: %04x -> %04x: %d steps\n", longestStart, longestEnd, longest);
+//
+//  return 0;
+//}
+#else
+int main() {
   angle longestStart;
   angle longestEnd;
   int longest = 0;
@@ -46,9 +142,10 @@ int main() {
 
   return 0;
 }
+#endif
 
 std::vector<Node> generateGraph() {
-  std::__1::vector<Node> nodes;
+  std::vector<Node> nodes;
   for (uint32_t i = 0; i <= 0xFFFFu; i++) {
     angle a = i;
     Node n = generateNode(a);
@@ -180,6 +277,7 @@ Node generateNode(angle a) {
   return n;
 }
 
+
 GenerationResults generateFastestPaths(std::vector<Node> &graph, angle src) {
   std::array<angle, 0x10000> backPath{0};
   std::array<bool, 0x10000> found{false};
@@ -206,7 +304,8 @@ GenerationResults generateFastestPaths(std::vector<Node> &graph, angle src) {
     int distance = current->distance;
     if (distance != lastDistance) {
       lastDistance = distance;
-      printf("Distance: %d, visited: %d, found: %d, remaining: %d, heap size %d\n", distance, visited, 0x10000 - remaining, remaining, heap.size());
+      printf("Distance: %d, visited: %d, found: %d, remaining: %d, heap size %ld\n", distance, visited,
+             0x10000 - remaining, remaining, heap.size());
     }
     visited++;
 
@@ -224,40 +323,6 @@ GenerationResults generateFastestPaths(std::vector<Node> &graph, angle src) {
       remaining--;
     }
   }
-  // TODO This prints out the route; this should probably be put in a method
-//  std::vector<angle> stack;
-//  {
-//    angle a = last->value;
-//    while (true) {
-//      angle prev = backPath[a];
-//      if (prev == a) {
-//        stack.push_back(a);
-//        printf("Done %04x to %04x!\n", prev, last->value);
-//        break;
-//      }
-//      stack.push_back(a);
-//      a = prev;
-//    }
-//    std::reverse(stack.begin(), stack.end());
-//  }
-//  {
-//    printf("%04x start angle x1\n", stack[0]);
-//    angle previousAngle = stack[0];
-//    for (int i = 1; i < stack.size(); i++) {
-//      angle currentAngle = stack[i];
-//      Node n = generateNode(previousAngle);
-//      MovementType::Type t;
-//      int count = 1;
-//      for (auto &neighbor : n.neighbors) {
-//        if (neighbor.value == currentAngle) {
-//          t = neighbor.movementType.type;
-//          count = neighbor.movementType.count;
-//        }
-//      }
-//      printf("%s x%d to %04x\n", nameForType(t), count, currentAngle);
-//      previousAngle = currentAngle;
-//    }
-//  }
 
   return {
       .longestPath = lastDistance,
